@@ -84,6 +84,9 @@ public class LevelRender extends Application
         cameraXYrotate.ry.setAngle(cameraXYrotate.ry.getAngle() - mouseDeltaX*MOUSE_SPEED*modifier*ROTATION_SPEED);
       }
     });
+    /***********************
+     * GOING TO BE USED WHEN I IMPLEMENT ANIMATION TIMER...
+     */
     scene.setOnMouseExited(new EventHandler<MouseEvent>() 
     {
       
@@ -94,49 +97,13 @@ public class LevelRender extends Application
         mouseOldX = mousePosX;
         mouseOldY = mousePosY;
         System.out.println(me.getSceneX());
+        if (me.getSceneX() <= 0)
+        {
+          
+        }
         
         //do stuff
       }
-    });
-    scene.setOnMousePressed(new EventHandler<MouseEvent>() {
-        @Override public void handle(MouseEvent me) {
-            mousePosX = me.getSceneX();
-            mousePosY = me.getSceneY();
-            mouseOldX = me.getSceneX();
-            mouseOldY = me.getSceneY();
-        }
-    });
-    scene.setOnMouseDragged(new EventHandler<MouseEvent>() {
-        @Override public void handle(MouseEvent me) {
-            mouseOldX = mousePosX;
-            mouseOldY = mousePosY;
-            mousePosX = me.getSceneX();
-            mousePosY = me.getSceneY();
-            mouseDeltaX = (mousePosX - mouseOldX); 
-            mouseDeltaY = (mousePosY - mouseOldY); 
-            
-            double modifier = 1.0;
-            
-            if (me.isControlDown()) {
-                modifier = 0.1;
-            } 
-            if (me.isShiftDown()) {
-                modifier = 10;
-            }     
-            if (me.isPrimaryButtonDown()) {
-                cameraXYrotate.ry.setAngle(cameraXYrotate.ry.getAngle() - mouseDeltaX*MOUSE_SPEED*modifier*ROTATION_SPEED);  
-                cameraXYrotate.rx.setAngle(cameraXYrotate.rx.getAngle() + mouseDeltaY*MOUSE_SPEED*modifier*ROTATION_SPEED);  
-            }
-            else if (me.isSecondaryButtonDown()) {
-                double z = camera.getTranslateZ();
-                double newZ = z + mouseDeltaX*MOUSE_SPEED*modifier;
-                camera.setTranslateZ(newZ);
-            }
-            else if (me.isMiddleButtonDown()) {
-                cameraXYtranslate.t.setX(cameraXYtranslate.t.getX() + mouseDeltaX*MOUSE_SPEED*modifier*TRACK_SPEED);  
-                cameraXYtranslate.t.setY(cameraXYtranslate.t.getY() + mouseDeltaY*MOUSE_SPEED*modifier*TRACK_SPEED);  
-            }
-        }
     });
     
 }
@@ -296,37 +263,6 @@ public class LevelRender extends Application
   @Override
   public void start(Stage primaryStage)
   {
-    /*
-    PhongMaterial redMaterial = new PhongMaterial();
-    redMaterial.setDiffuseColor(Color.DARKRED);
-    redMaterial.setSpecularColor(Color.RED);
-    
-    PhongMaterial whiteMaterial = new PhongMaterial();
-    whiteMaterial.setDiffuseColor(Color.ALICEBLUE);
-    whiteMaterial.setSpecularColor(Color.BLACK);
-    
-    Box boxTest = new Box(100, 100, 1);
-    boxTest.setMaterial(redMaterial);
-    boxTest.setRotationAxis(Rotate.Y_AXIS);
-    boxTest.setRotate(90);
-    
-    Box boxTest2 = new Box(100, 100, 1);
-    boxTest2.setMaterial(whiteMaterial);
-    boxTest2.setRotationAxis(Rotate.Y_AXIS);
-    boxTest2.setRotate(90);
-    
-    Xform terrainXform = new Xform();
-    Xform boxXform = new Xform();
-    Xform boxXform2 = new Xform();
-    boxXform.setTranslateX(50);
-    boxXform2.setTranslateX(-50);
-    
-    
-    boxXform.getChildren().add(boxTest);
-    boxXform2.getChildren().add(boxTest2);
-    terrainXform.getChildren().addAll(boxXform, boxXform2);
-    world.getChildren().add(terrainXform);
-    */
     root.getChildren().add(world);
     
     buildCamera();
