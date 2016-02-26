@@ -2,8 +2,10 @@ package game;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.scene.Camera;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.ParallelCamera;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.Scene;
 import javafx.scene.SceneAntialiasing;
@@ -64,7 +66,7 @@ public class LevelRender extends Application
   
   private void buildCamera()
   {
-    root.getChildren().add(cameraXYrotate);
+    root.getChildren().add(cameraXYtranslate);
     //cameraXYrotate.getChildren().add(cameraXYtranslate);
     //cameraXYtranslate.getChildren().add(cameraZrotate);
     //Testing to see...
@@ -79,7 +81,26 @@ public class LevelRender extends Application
     cameraXYrotate.ry.setAngle(CAMERA_INITIAL_Y_ANGLE);
     cameraXYrotate.rx.setAngle(CAMERA_INITIAL_X_ANGLE);
     
-    axisGroup.setTranslateZ(1000);
+    //Sets up a reticle in the center of the screen
+    PhongMaterial blackMaterial = new PhongMaterial();
+    blackMaterial.setDiffuseColor(Color.BLACK);
+    blackMaterial.setSpecularColor(Color.BLACK);
+    
+    Box test = new Box(.05, .001, .001);
+    Box test2 = new Box(.001, .05, .001);
+    test.setMaterial(blackMaterial);
+    test2.setMaterial(blackMaterial);
+    Xform testXform = new Xform();
+    Xform testXform2 = new Xform();
+    
+    testXform.setRotationAxis(Rotate.X_AXIS);
+    testXform.setRotate(90);
+    testXform.setTranslateZ(5);
+    testXform2.setTranslateZ(5);
+    testXform.getChildren().add(test);
+    testXform2.getChildren().add(test2);
+    cameraXYrotate.getChildren().addAll(testXform, testXform2);
+    
   }
   
 
@@ -211,6 +232,8 @@ public class LevelRender extends Application
     axisGroup.getChildren().addAll(xAxis, yAxis, zAxis);
     axisGroup.setVisible(true);
     world.getChildren().addAll(axisGroup);
+    
+    axisGroup.setTranslateZ(1000);
 }
   
   private void generateRoom()
@@ -281,6 +304,27 @@ public class LevelRender extends Application
     PhongMaterial redMaterial = new PhongMaterial();
     redMaterial.setDiffuseColor(Color.DARKRED);
     redMaterial.setSpecularColor(Color.RED);
+    
+    for (int i = -1000; i < 1000; i += 100)
+    {
+      Xform testXform = new Xform();
+      Xform testXform2 = new Xform();
+      Box testBox = new Box(2000, 1, 1);
+      Box testBox2 = new Box(1, 2000, 1);
+      testBox.setMaterial(redMaterial);
+      testBox.setRotationAxis(Rotate.X_AXIS);
+      testBox.setRotate(90);
+      testXform.getChildren().add(testBox);
+      testXform.setTranslateY(-100);
+      testXform.setTranslateZ(i);
+      testBox2.setMaterial(redMaterial);
+      testBox2.setRotationAxis(Rotate.X_AXIS);
+      testBox2.setRotate(90);
+      testXform2.getChildren().add(testBox2);
+      testXform2.setTranslateY(-100);
+      testXform2.setTranslateX(i);
+      world.getChildren().addAll(testXform, testXform2);
+    }
     
     Xform testBoxXform = new Xform();
     
@@ -402,6 +446,7 @@ public class LevelRender extends Application
       }
     }
   }
+  
   
   
   @Override
