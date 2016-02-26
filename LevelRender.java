@@ -1,13 +1,17 @@
 package game;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.Scene;
+import javafx.scene.SceneAntialiasing;
+import javafx.scene.SubScene;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Box;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
 import javafx.event.EventHandler;
@@ -16,11 +20,26 @@ import javafx.scene.input.MouseEvent;
 
 public class LevelRender extends Application
 {
+  //Game loop
+  MainGameLoop gameLoop;
   
   final Group root = new Group();
   Xform world = new Xform();
   Xform axisGroup = new Xform();
   
+  //Character movement values
+  boolean goForward = false;
+  boolean goBackward = false;
+  boolean goLeft = false;
+  boolean goRight = false;
+  boolean goRun = false;
+  double moveBy = 5;
+  
+  //FPS fixing constants
+  private long fps = 60;
+  private long lastUpdate = 0;
+  
+  //Camera transforms
   final Xform cameraXYrotate = new Xform();
   final Xform cameraXYtranslate = new Xform();
   final Xform cameraZrotate = new Xform();
@@ -42,7 +61,6 @@ public class LevelRender extends Application
   double mouseDeltaY;
   private static final double MOUSE_SPEED = 0.1;
   private static final double ROTATION_SPEED = 3.0;
-  private static final double TRACK_SPEED = 0.3;
   
   private void buildCamera()
   {
@@ -105,6 +123,18 @@ public class LevelRender extends Application
         //do stuff
       }
     });
+    //This might be superfluous once we figure out mouse control better.
+    //Used to make sure the mouseMoved doesn't destroy our field of view
+    //When the mouse reenters the scene.
+    scene.setOnMouseEntered(new EventHandler<MouseEvent>()
+    {
+      @Override
+      public void handle(MouseEvent me)
+      {
+        mousePosX = me.getSceneX();
+        mousePosY = me.getSceneY();
+      }
+    });
     
 }
   
@@ -114,37 +144,45 @@ public class LevelRender extends Application
     {
       @Override
       public void handle(KeyEvent event)
-      {
-        double xAngle = cameraXYrotate.rx.getAngle() * Math.PI / 180;
-        double zAngle = cameraXYrotate.ry.getAngle() * Math.PI / 180;
-        double xAnglePercentage = Math.sin(zAngle);
-        double zAnglePercentage = Math.cos(zAngle);
-        System.out.println("Angles: (" + xAngle + ", " + zAngle + ")");
-        
-        double moveBy = 5;
-        
+      {   
         switch (event.getCode())
         {
         case W:
-          cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*xAnglePercentage));
-          cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*zAnglePercentage));
+          goForward = true;
           break;
         case A:
-          cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*zAnglePercentage));
-          cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() - moveBy*xAnglePercentage));
+          goLeft = true;
           break;
         case S:
-          cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() - moveBy*xAnglePercentage));
-          cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() - moveBy*zAnglePercentage));
+          goBackward = true;
           break;
         case D:
-          cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() - moveBy*zAnglePercentage));
-          cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*xAnglePercentage));
+          goRight = true;
           break;
         }
-      }
-      
-      
+      }  
+    });
+    scene.setOnKeyReleased(new EventHandler<KeyEvent>()
+    {
+      @Override
+      public void handle(KeyEvent event)
+      {
+        switch (event.getCode())
+        {
+        case W:
+          goForward = false;
+          break;
+        case A:
+          goLeft = false;
+          break;
+        case S:
+          goBackward = false;
+          break;
+        case D:
+          goRight = false;
+          break;
+        }
+      } 
     });
   }
   
@@ -254,9 +292,115 @@ public class LevelRender extends Application
     testBoxXform.setTranslateY(-100);
     
     world.getChildren().add(testBoxXform);
+  }
+  
+  public void updateCharacter()
+  {
+    //Do stuff
+    double xAngle = cameraXYrotate.rx.getAngle() * Math.PI / 180;
+    double zAngle = cameraXYrotate.ry.getAngle() * Math.PI / 180;
+    double xAnglePercentage = Math.sin(zAngle) * Math.sin(zAngle);
+    double zAnglePercentage = Math.cos(zAngle) * Math.cos(zAngle);
+        //Keeps the sign of the sin/cos since it's needed for seeing whether to add/subtract from X/Z position
+    if (Math.sin(zAngle) < 0) xAnglePercentage = -xAnglePercentage;
+    if (Math.cos(zAngle) < 0) zAnglePercentage = -zAnglePercentage;
     
     
+    if (goForward && !goBackward) 
+    {
+      //Northwest
+      if (goLeft && !goRight)
+      {
+        double test = 2*Math.sqrt(2);
+        double moveX = moveBy*(xAnglePercentage + zAnglePercentage)/2;
+        double moveZ = moveBy * (zAnglePercentage - xAnglePercentage)/2;
+        System.out.println("X, Z percentage: (" + xAnglePercentage + ", " + zAnglePercentage + ")");
+        System.out.println("New X, Z: (" + moveX + ", " + moveZ + ")");
+        //System.out.println("NW movement: (" + moveX + ", " + moveY + ")");
+        //cameraXYtranslate.t.setX(cameraXYtranslate.t.getX() + (moveBy*xAnglePercentage + zAnglePercentage)/2);
+        //cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveBy * (zAnglePercentage - xAnglePercentage) / 2);
+        //North part
+        //cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*xAnglePercentage));
+        //cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*zAnglePercentage));
+        //West part
+        //cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*zAnglePercentage));
+        //cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() - moveBy*xAnglePercentage));
+        return;
+      }
+      //Northeast
+      if (goRight && !goLeft)
+      {
+        System.out.println("Noncardinal NE direction pressed");
+        return;
+      }
+      //North
+      else if ((!goRight && !goLeft) || (goLeft && goRight))
+      {
+        cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*xAnglePercentage));
+        cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*zAnglePercentage));
+        return;
+      }
+    }
+    if (goBackward && !goForward)
+    {
+      //Southwest
+      if (goLeft && !goRight)
+      {
+        System.out.println("Noncardinal SW direction pressed");
+        return;
+      }
+      //Southeast
+      if (goRight && !goLeft)
+      {
+        System.out.println("Noncardinal SE direction pressed");
+        return;
+      }
+      //South
+      else if ((!goRight && !goLeft) || (goRight && goLeft))
+      {
+        cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() - moveBy*xAnglePercentage));
+        cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() - moveBy*zAnglePercentage));
+        return;
+      }
+    //West  
+    }
+    if (goLeft && !goRight)
+    {
+      cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*zAnglePercentage));
+      cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() - moveBy*xAnglePercentage));
+      return;
+    }
+    //East
+    if (goRight && !goLeft)
+    {
+      cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() - moveBy*zAnglePercentage));
+      cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*xAnglePercentage));
+      return;
+    }
+
     
+  }
+  
+  public class MainGameLoop extends AnimationTimer
+  {
+    long updateWindow = 1000/fps;
+    @Override
+    public void handle(long now)
+    {
+      long difference = now - lastUpdate;
+      lastUpdate = now;
+      if (difference >= updateWindow)
+      {
+        //Check for running/stamina depletion
+        
+        //Update character position
+        updateCharacter();
+        
+        //Update zombie positions
+        
+        //Check for collisions
+      }
+    }
   }
   
   
@@ -265,9 +409,11 @@ public class LevelRender extends Application
   {
     root.getChildren().add(world);
     
+
     buildCamera();
     buildAxes();
     generateRoom();
+    gameLoop = new MainGameLoop();
     
     
     Scene scene = new Scene(root, 1000, 1000, true);
@@ -279,6 +425,8 @@ public class LevelRender extends Application
     primaryStage.setTitle("JavaFX Camera and Dungeon Test");
     primaryStage.setScene(scene);
     primaryStage.show();
+    
+    gameLoop.start();
   }
   
   public static void main(String[] args)
