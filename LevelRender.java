@@ -22,6 +22,7 @@ import javafx.scene.input.MouseEvent;
 
 public class LevelRender extends Application
 {
+  HouseGenerator houseGen = new HouseGenerator();
   //Game loop
   MainGameLoop gameLoop;
   
@@ -301,6 +302,7 @@ public class LevelRender extends Application
     
     world.getChildren().add(roomXform);
     */
+    world.getChildren().add(houseGen.wallXform);
     PhongMaterial redMaterial = new PhongMaterial();
     redMaterial.setDiffuseColor(Color.DARKRED);
     redMaterial.setSpecularColor(Color.RED);
