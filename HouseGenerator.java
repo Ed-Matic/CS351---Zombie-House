@@ -16,9 +16,11 @@ public class HouseGenerator extends Group
   public int xSize = 25;
   public int ySize = 25;
   public Box[][] wall = new Box[xSize][ySize];
+  public Box[][] tempWall = new Box[xSize][ySize];
   public float wallLength = 3.0f;
   private Point3D initialPos;
   public Xform wallXform = new Xform();
+  public Xform wallYform = new Xform();
   private Cell[] cells;
   private int currentCell = 0;
   private int totalCells;
@@ -47,7 +49,6 @@ public class HouseGenerator extends Group
     double initialPosZ = (-ySize / 2) + wallLength / 2;
 
     Point3D myPos = initialPos;
-    Box[][] tempWall = new Box[xSize][ySize];
 
     for (int i = 0; i < ySize; i++)
     {
@@ -84,7 +85,7 @@ public class HouseGenerator extends Group
     }
 
     // For y-Axis
-    /*for (int i = 0; i < ySize; i++)
+    for (int i = 0; i < ySize; i++)
     {
       for (int j = 0; j < xSize; j++)
       {
@@ -95,16 +96,24 @@ public class HouseGenerator extends Group
         
 
       }
-    }*/
+    }
     
+    finishHouse();
     
+  }
+  
+  public void finishHouse()
+  {
     for (int i = 0; i < xSize; i++)
     {
       for(int j = 0; j < xSize; j++)
       {
-        wallXform.getChildren().addAll(wall[i][j], tempWall[i][j]);
-        wallXform.setTranslateX(-400);
+        wallXform.getChildren().add(wall[i][j]);
+        wallYform.getChildren().add(tempWall[j][i]);
+        //wallXform.setTranslateX(-400);
+        wallYform.setRotateY(90);
         wallXform.setTranslateY(-20);
+        wallYform.setTranslateY(-20);
       }
     }
   }
