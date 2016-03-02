@@ -250,11 +250,11 @@ public class LevelRender extends Application
   private void generateRoom()
   {
     //IMAGE COMMENTED OUT BECAUSE ITS NOT ON GITHUB YET WHILE I PLAY WITH IT
-    //Image textureImage = new Image(getClass().getResourceAsStream("brick.jpg"));
+    Image textureImage = new Image(getClass().getResourceAsStream("brick.jpg"));
     
     PhongMaterial testMaterial = new PhongMaterial();
     //testMaterial.setDiffuseMap(textureImage);
-    testMaterial.setDiffuseColor(Color.BLUE);
+    testMaterial.setDiffuseColor(Color.WHITE);
     testMaterial.setSpecularColor(Color.TRANSPARENT);
     
     PhongMaterial redMaterial = new PhongMaterial();
@@ -301,30 +301,69 @@ public class LevelRender extends Application
     testBoxXform.setTranslateY(-100);
     
     Xform wallsXform = new Xform();
-    float currentX = 0;
-    float currentZ = 0;
     boolean[][] floorPlan = makeFloorPlan();
-    boolean[][] visited = new boolean[NUM_TILES][NUM_TILES];
-    for (boolean[] boolArray: floorPlan)
+    boolean[][] unvisitedHorizontal = new boolean[NUM_TILES][NUM_TILES];
+    boolean[][] unvisitedVertical = new boolean[NUM_TILES][NUM_TILES];
+    for (int i = 0; i < NUM_TILES; i++)
     {
-      for (boolean bool: boolArray)
+      for (int j = 0; j < NUM_TILES; j++)
       {
-        if (bool)
+        unvisitedHorizontal[i][j] = true;
+        unvisitedVertical[i][j] = true;
+      }
+    }
+    for (int i = 0; i < NUM_TILES; i++)
+    {
+      for (int j = 0; j < NUM_TILES; j++)
+      {
+        if (floorPlan[i][j] && unvisitedHorizontal[i][j])
         {
-          Box box = new Box(TILE_SIZE, TILE_SIZE*4, TILE_SIZE);
-          //box.setTranslateY(-TILE_SIZE);
-          box.setBlendMode(BlendMode.SRC_OVER);
-          box.setCullFace(CullFace.BACK);
-          box.setTranslateX(currentX);
-          box.setTranslateZ(currentZ);
-          box.setMaterial(testMaterial);
-          wallsXform.getChildren().add(box);
+          int horizontalX = i-1;
+          //Creating Horizontal Walls
+          for (int k = i; k < NUM_TILES; k++)
+          {
+            unvisitedHorizontal[k][j] = false;
+            if (floorPlan[k][j]) horizontalX += 1;
+            else k = NUM_TILES;
+          }
+          if (horizontalX != i)
+          {
+            System.out.println("i, horizX: (" + i + ", " + horizontalX + ")");
+            Box box = new Box((horizontalX-i)*TILE_SIZE, TILE_SIZE*4, TILE_SIZE);
+            //box.setTranslateY(-TILE_SIZE);
+            box.setBlendMode(BlendMode.SRC_OVER);
+            box.setCullFace(CullFace.BACK);
+            box.setTranslateX((horizontalX-i)*TILE_SIZE/2);
+            box.setTranslateZ(j*TILE_SIZE);
+            box.setMaterial(testMaterial);
+            wallsXform.getChildren().add(box);
+          }
+        }
+        if (floorPlan[i][j] && unvisitedVertical[i][j])
+        {
+          int verticalZ = j-1;
+          //Creating Vertical Walls
+          for (int k = j; k < NUM_TILES; k++)
+          {
+            unvisitedVertical[i][k] = false;
+            if (floorPlan[i][k]) verticalZ += 1;
+            else k = NUM_TILES;
+          }
+          if (verticalZ != j)
+          {
+            System.out.println("i, verticleZ: (" + i + ", " + verticalZ + ")");
+            Box box = new Box(TILE_SIZE, TILE_SIZE*4, TILE_SIZE*(verticalZ-j));
+            //box.setTranslateY(-TILE_SIZE);
+            box.setBlendMode(BlendMode.SRC_OVER);
+            box.setCullFace(CullFace.BACK);
+            box.setTranslateX(i*TILE_SIZE);
+            box.setTranslateZ((verticalZ-j)*TILE_SIZE/2);
+            box.setMaterial(testMaterial);
+            wallsXform.getChildren().add(box);
+          }
         }
         
-        currentX += TILE_SIZE;
       }
-      currentX = 0;
-      currentZ += TILE_SIZE;
     }
     world.getChildren().add(wallsXform);
     world.getChildren().add(testBoxXform);
