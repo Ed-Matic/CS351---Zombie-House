@@ -8,12 +8,14 @@ import javafx.scene.Node;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.PointLight;
 import javafx.scene.Scene;
+import javafx.scene.effect.BlendMode;
 import javafx.scene.effect.Light;
 import javafx.scene.effect.Lighting;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Box;
+import javafx.scene.shape.CullFace;
 import javafx.scene.shape.DrawMode;
 import javafx.scene.shape.MeshView;
 import javafx.scene.transform.Rotate;
@@ -30,10 +32,10 @@ public class LevelRender extends Application
   
   final Group root = new Group();
   Xform world = new Xform();
-  Xform axisGroup = new Xform();
   
   //Size of our tile
   final long TILE_SIZE = 50;
+  final int NUM_TILES = 50;
   
   //Character movement values
   boolean goForward = false;
@@ -223,34 +225,27 @@ public class LevelRender extends Application
     });
   }
   
-  private void buildAxes() {
-    System.out.println("buildAxes()");
-    final PhongMaterial redMaterial = new PhongMaterial();
-    redMaterial.setDiffuseColor(Color.DARKRED);
-    redMaterial.setSpecularColor(Color.RED);
-
-    final PhongMaterial greenMaterial = new PhongMaterial();
-    greenMaterial.setDiffuseColor(Color.DARKGREEN);
-    greenMaterial.setSpecularColor(Color.GREEN);
-
-    final PhongMaterial blueMaterial = new PhongMaterial();
-    blueMaterial.setDiffuseColor(Color.DARKBLUE);
-    blueMaterial.setSpecularColor(Color.BLUE);
-
-    final Box xAxis = new Box(250, 1, 1);
-    final Box yAxis = new Box(1, 250, 1);
-    final Box zAxis = new Box(1, 1, 250);
-
-    xAxis.setMaterial(redMaterial);
-    yAxis.setMaterial(greenMaterial);
-    zAxis.setMaterial(blueMaterial);
-
-    axisGroup.getChildren().addAll(xAxis, yAxis, zAxis);
-    axisGroup.setVisible(true);
-    world.getChildren().addAll(axisGroup);
+  private boolean[][] makeFloorPlan()
+  {
+    boolean[][] floorPlan = new boolean[NUM_TILES][NUM_TILES];
     
-    axisGroup.setTranslateZ(1000);
-}
+    for (int i = 0; i < NUM_TILES; i++)
+    {
+      floorPlan[i][0] = true;
+      floorPlan[0][i] = true;
+      floorPlan[i][NUM_TILES-1] = true;
+      floorPlan[NUM_TILES-1][i] = true;
+    }
+    for (int i = 1; i < NUM_TILES-1; i++)
+    {
+      for (int j = 1; j < NUM_TILES-1; j++)
+      {
+        floorPlan[i][j] = false;
+      }
+    }
+    
+    return floorPlan;
+  }
   
   private void generateRoom()
   {
@@ -259,8 +254,8 @@ public class LevelRender extends Application
     
     PhongMaterial testMaterial = new PhongMaterial();
     //testMaterial.setDiffuseMap(textureImage);
-    testMaterial.setDiffuseColor(Color.WHITE);
-    testMaterial.setSpecularColor(Color.BLACK);
+    testMaterial.setDiffuseColor(Color.BLUE);
+    testMaterial.setSpecularColor(Color.TRANSPARENT);
     
     PhongMaterial redMaterial = new PhongMaterial();
     redMaterial.setDiffuseColor(Color.DARKRED);
@@ -269,78 +264,30 @@ public class LevelRender extends Application
     PhongMaterial whiteMaterial = new PhongMaterial();
     whiteMaterial.setDiffuseColor(Color.CORNFLOWERBLUE);
     whiteMaterial.setSpecularColor(Color.LIGHTBLUE);
-    
-    PhongMaterial greenMaterial = new PhongMaterial();
-    greenMaterial.setDiffuseColor(Color.DARKOLIVEGREEN);
-    greenMaterial.setSpecularColor(Color.LIGHTGREEN);
-    
-    Xform roomXform = new Xform();
-    Xform floorXform = new Xform();
-    Xform northWallXform = new Xform();
-    Xform eastWallXform = new Xform();
-    Xform southWallXform = new Xform();
-    Xform westWallXform = new Xform();
-    
-    Box floor = new Box(TILE_SIZE*20, TILE_SIZE*20, TILE_SIZE);
-    floor.setMaterial(redMaterial);
-    floor.setRotationAxis(Rotate.X_AXIS);
-    floor.setRotate(-90);
-    
-    Box northWall = new Box(TILE_SIZE*20, TILE_SIZE*4, TILE_SIZE);
-    northWall.setMaterial(testMaterial);
-    
-    Box eastWall = new Box(TILE_SIZE*20, TILE_SIZE*4, TILE_SIZE);
-    eastWall.setMaterial(testMaterial);
-    eastWallXform.setRotationAxis(Rotate.Y_AXIS);
-    eastWallXform.setRotate(90);
-    
-    Box southWall = new Box(TILE_SIZE*20, TILE_SIZE*4, TILE_SIZE);
-    southWall.setMaterial(testMaterial);
-    
-    Box westWall = new Box(TILE_SIZE*20, TILE_SIZE*4, TILE_SIZE);
-    westWall.setMaterial(testMaterial);
-    westWallXform.setRotationAxis(Rotate.Y_AXIS);
-    westWallXform.setRotate(90);
-    
-    //more boxes
-    
-    floorXform.setTranslateY(TILE_SIZE*2);
-    northWallXform.setTranslateZ(-TILE_SIZE*10);
-    southWallXform.setTranslateZ(TILE_SIZE*10);
-    eastWallXform.setTranslateX(TILE_SIZE*10);
-    westWallXform.setTranslateX(-TILE_SIZE*10);
-    
-    floorXform.getChildren().add(floor);
-    northWallXform.getChildren().add(northWall);
-    southWallXform.getChildren().add(southWall);
-    eastWallXform.getChildren().add(eastWall);
-    westWallXform.getChildren().add(westWall);
-    
-    roomXform.getChildren().addAll(northWallXform, southWallXform, eastWallXform, westWallXform, floorXform);
-    
-    world.getChildren().add(roomXform);
-    
+   
     //CASE FOR houseGEN
-    world.getChildren().add(houseGen.wallXform);
+    //world.getChildren().add(houseGen.wallXform);
     
-    for (int i = -1000; i < 1000; i += TILE_SIZE)
+    for (float i = 0; i < NUM_TILES; i += 1)
     {
       Xform testXform = new Xform();
       Xform testXform2 = new Xform();
-      Box testBox = new Box(2000, 1, 1);
-      Box testBox2 = new Box(1, 2000, 1);
+      Box testBox = new Box(NUM_TILES*TILE_SIZE, 1, 1);
+      Box testBox2 = new Box(1, NUM_TILES*TILE_SIZE, 1);
       testBox.setMaterial(redMaterial);
       testBox.setRotationAxis(Rotate.X_AXIS);
       testBox.setRotate(90);
       testXform.getChildren().add(testBox);
-      testXform.setTranslateY(-100);
-      testXform.setTranslateZ(i);
+      testXform.setTranslateY(-2*TILE_SIZE);
+      testXform.setTranslateZ(i*TILE_SIZE);
+      testXform.setTranslateX(NUM_TILES*TILE_SIZE/2);
       testBox2.setMaterial(redMaterial);
       testBox2.setRotationAxis(Rotate.X_AXIS);
       testBox2.setRotate(90);
       testXform2.getChildren().add(testBox2);
-      testXform2.setTranslateY(-100);
-      testXform2.setTranslateX(i);
+      testXform2.setTranslateY(-2*TILE_SIZE);
+      testXform2.setTranslateX(i*TILE_SIZE);
+      testXform2.setTranslateZ(NUM_TILES*TILE_SIZE/2);
       world.getChildren().addAll(testXform, testXform2);
     }
     
@@ -353,6 +300,33 @@ public class LevelRender extends Application
     testBoxXform.getChildren().add(testBox);
     testBoxXform.setTranslateY(-100);
     
+    Xform wallsXform = new Xform();
+    float currentX = 0;
+    float currentZ = 0;
+    boolean[][] floorPlan = makeFloorPlan();
+    boolean[][] visited = new boolean[NUM_TILES][NUM_TILES];
+    for (boolean[] boolArray: floorPlan)
+    {
+      for (boolean bool: boolArray)
+      {
+        if (bool)
+        {
+          Box box = new Box(TILE_SIZE, TILE_SIZE*4, TILE_SIZE);
+          //box.setTranslateY(-TILE_SIZE);
+          box.setBlendMode(BlendMode.SRC_OVER);
+          box.setCullFace(CullFace.BACK);
+          box.setTranslateX(currentX);
+          box.setTranslateZ(currentZ);
+          box.setMaterial(testMaterial);
+          wallsXform.getChildren().add(box);
+        }
+        
+        currentX += TILE_SIZE;
+      }
+      currentX = 0;
+      currentZ += TILE_SIZE;
+    }
+    world.getChildren().add(wallsXform);
     world.getChildren().add(testBoxXform);
   }
   
@@ -480,7 +454,6 @@ public class LevelRender extends Application
     
 
     buildCamera();
-    buildAxes();
     generateRoom();
     gameLoop = new MainGameLoop();
     
