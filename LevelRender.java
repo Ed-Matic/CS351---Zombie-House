@@ -1,19 +1,21 @@
 package game;
 
+
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
-import javafx.scene.Camera;
 import javafx.scene.Group;
 import javafx.scene.Node;
-import javafx.scene.ParallelCamera;
 import javafx.scene.PerspectiveCamera;
+import javafx.scene.PointLight;
 import javafx.scene.Scene;
-import javafx.scene.SceneAntialiasing;
-import javafx.scene.SubScene;
+import javafx.scene.effect.Light;
+import javafx.scene.effect.Lighting;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Box;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.DrawMode;
+import javafx.scene.shape.MeshView;
 import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
 import javafx.event.EventHandler;
@@ -22,13 +24,16 @@ import javafx.scene.input.MouseEvent;
 
 public class LevelRender extends Application
 {
-  HouseGenerator houseGen = new HouseGenerator();
   //Game loop
   MainGameLoop gameLoop;
+  HouseGenerator houseGen = new HouseGenerator();
   
   final Group root = new Group();
   Xform world = new Xform();
   Xform axisGroup = new Xform();
+  
+  //Size of our tile
+  final long TILE_SIZE = 50;
   
   //Character movement values
   boolean goForward = false;
@@ -47,6 +52,8 @@ public class LevelRender extends Application
   final Xform cameraXYtranslate = new Xform();
   final Xform cameraZrotate = new Xform();
   final PerspectiveCamera camera = new PerspectiveCamera(true);
+  final Xform lightXform = new Xform();
+  final PointLight light = new PointLight();
   
   //Camera initial values
   private static final double CAMERA_INITIAL_DISTANCE = 0;
@@ -68,9 +75,6 @@ public class LevelRender extends Application
   private void buildCamera()
   {
     root.getChildren().add(cameraXYtranslate);
-    //cameraXYrotate.getChildren().add(cameraXYtranslate);
-    //cameraXYtranslate.getChildren().add(cameraZrotate);
-    //Testing to see...
     cameraXYtranslate.getChildren().add(cameraXYrotate);
     cameraXYrotate.getChildren().add(cameraZrotate);
     cameraZrotate.getChildren().add(camera);
@@ -81,6 +85,14 @@ public class LevelRender extends Application
     camera.setTranslateZ(CAMERA_INITIAL_DISTANCE);
     cameraXYrotate.ry.setAngle(CAMERA_INITIAL_Y_ANGLE);
     cameraXYrotate.rx.setAngle(CAMERA_INITIAL_X_ANGLE);
+
+    //Adds a PointLight at the 
+    PointLight light = new PointLight();
+    light.setColor(Color.WHITE);
+    lightXform.getChildren().add(light);
+    cameraXYrotate.getChildren().add(lightXform);
+    light.getScope().add(world);
+    
     
     //Sets up a reticle in the center of the screen
     PhongMaterial blackMaterial = new PhongMaterial();
@@ -93,14 +105,13 @@ public class LevelRender extends Application
     test2.setMaterial(blackMaterial);
     Xform testXform = new Xform();
     Xform testXform2 = new Xform();
+    Xform crosshairXform = new Xform();
     
-    testXform.setRotationAxis(Rotate.X_AXIS);
-    testXform.setRotate(90);
-    testXform.setTranslateZ(5);
-    testXform2.setTranslateZ(5);
+    crosshairXform.getChildren().addAll(testXform, testXform2);
+    crosshairXform.setTranslateZ(5);
     testXform.getChildren().add(test);
     testXform2.getChildren().add(test2);
-    cameraXYrotate.getChildren().addAll(testXform, testXform2);
+    cameraXYrotate.getChildren().add(crosshairXform);
     
   }
   
@@ -118,10 +129,14 @@ public class LevelRender extends Application
         mousePosY = me.getSceneY();
         mouseDeltaX = mousePosX - mouseOldX;
         mouseDeltaY = mousePosY - mouseOldY;
-        double modifier = 1.0;
         
-        cameraXYrotate.rx.setAngle(cameraXYrotate.rx.getAngle() + mouseDeltaY*MOUSE_SPEED*modifier*ROTATION_SPEED);
+        double modifier = 0.75;
+        
+        double newMouseXAngle = cameraXYrotate.rx.getAngle() + mouseDeltaY*MOUSE_SPEED*modifier*ROTATION_SPEED;
         cameraXYrotate.ry.setAngle(cameraXYrotate.ry.getAngle() - mouseDeltaX*MOUSE_SPEED*modifier*ROTATION_SPEED);
+        if (newMouseXAngle > 90) return;
+        else if (newMouseXAngle < -90) return;
+        else cameraXYrotate.rx.setAngle(newMouseXAngle);
       }
     });
     /***********************
@@ -239,14 +254,21 @@ public class LevelRender extends Application
   
   private void generateRoom()
   {
-    /*
+    //IMAGE COMMENTED OUT BECAUSE ITS NOT ON GITHUB YET WHILE I PLAY WITH IT
+    //Image textureImage = new Image(getClass().getResourceAsStream("brick.jpg"));
+    
+    PhongMaterial testMaterial = new PhongMaterial();
+    //testMaterial.setDiffuseMap(textureImage);
+    testMaterial.setDiffuseColor(Color.WHITE);
+    testMaterial.setSpecularColor(Color.BLACK);
+    
     PhongMaterial redMaterial = new PhongMaterial();
     redMaterial.setDiffuseColor(Color.DARKRED);
-    redMaterial.setSpecularColor(Color.RED);
+    redMaterial.setSpecularColor(Color.BLACK);
     
     PhongMaterial whiteMaterial = new PhongMaterial();
-    whiteMaterial.setDiffuseColor(Color.ALICEBLUE);
-    whiteMaterial.setSpecularColor(Color.BLACK);
+    whiteMaterial.setDiffuseColor(Color.CORNFLOWERBLUE);
+    whiteMaterial.setSpecularColor(Color.LIGHTBLUE);
     
     PhongMaterial greenMaterial = new PhongMaterial();
     greenMaterial.setDiffuseColor(Color.DARKOLIVEGREEN);
@@ -259,38 +281,34 @@ public class LevelRender extends Application
     Xform southWallXform = new Xform();
     Xform westWallXform = new Xform();
     
-    Box floor = new Box(1000, 1000, 1);
+    Box floor = new Box(TILE_SIZE*20, TILE_SIZE*20, TILE_SIZE);
     floor.setMaterial(redMaterial);
     floor.setRotationAxis(Rotate.X_AXIS);
     floor.setRotate(-90);
     
-    Box northWall = new Box(1000, 100, 1);
-    northWall.setMaterial(whiteMaterial);
-    northWall.setRotationAxis(Rotate.Y_AXIS);
-    northWall.setRotate(0.0);
+    Box northWall = new Box(TILE_SIZE*20, TILE_SIZE*4, TILE_SIZE);
+    northWall.setMaterial(testMaterial);
     
-    Box eastWall = new Box(1000, 100, 1);
-    eastWall.setMaterial(greenMaterial);
-    eastWall.setRotationAxis(Rotate.Y_AXIS);
-    eastWall.setRotate(0.0);
+    Box eastWall = new Box(TILE_SIZE*20, TILE_SIZE*4, TILE_SIZE);
+    eastWall.setMaterial(testMaterial);
+    eastWallXform.setRotationAxis(Rotate.Y_AXIS);
+    eastWallXform.setRotate(90);
     
-    Box southWall = new Box(1000, 100, 1);
-    southWall.setMaterial(whiteMaterial);
-    southWall.setRotationAxis(Rotate.Y_AXIS);
-    southWall.setRotate(0.0);
+    Box southWall = new Box(TILE_SIZE*20, TILE_SIZE*4, TILE_SIZE);
+    southWall.setMaterial(testMaterial);
     
-    Box westWall = new Box(1000, 100, 1);
-    westWall.setMaterial(greenMaterial);
-    westWall.setRotationAxis(Rotate.Y_AXIS);
-    westWall.setRotate(0.0);
+    Box westWall = new Box(TILE_SIZE*20, TILE_SIZE*4, TILE_SIZE);
+    westWall.setMaterial(testMaterial);
+    westWallXform.setRotationAxis(Rotate.Y_AXIS);
+    westWallXform.setRotate(90);
     
     //more boxes
     
-    floorXform.setTranslateY(100);
-    northWallXform.setTranslateZ(-500);
-    southWallXform.setTranslateZ(500);
-    eastWallXform.setTranslateX(500);
-    westWallXform.setTranslateX(-500);
+    floorXform.setTranslateY(TILE_SIZE*2);
+    northWallXform.setTranslateZ(-TILE_SIZE*10);
+    southWallXform.setTranslateZ(TILE_SIZE*10);
+    eastWallXform.setTranslateX(TILE_SIZE*10);
+    westWallXform.setTranslateX(-TILE_SIZE*10);
     
     floorXform.getChildren().add(floor);
     northWallXform.getChildren().add(northWall);
@@ -301,13 +319,11 @@ public class LevelRender extends Application
     roomXform.getChildren().addAll(northWallXform, southWallXform, eastWallXform, westWallXform, floorXform);
     
     world.getChildren().add(roomXform);
-    */
-    world.getChildren().add(houseGen.wallXform);
-    PhongMaterial redMaterial = new PhongMaterial();
-    redMaterial.setDiffuseColor(Color.DARKRED);
-    redMaterial.setSpecularColor(Color.RED);
     
-    for (int i = -1000; i < 1000; i += 100)
+    //CASE FOR houseGEN
+    world.getChildren().add(houseGen.wallXform);
+    
+    for (int i = -1000; i < 1000; i += TILE_SIZE)
     {
       Xform testXform = new Xform();
       Xform testXform2 = new Xform();
@@ -343,13 +359,13 @@ public class LevelRender extends Application
   public void updateCharacter()
   {
     //Do stuff
-    double xAngle = cameraXYrotate.rx.getAngle() * Math.PI / 180;
-    double zAngle = cameraXYrotate.ry.getAngle() * Math.PI / 180;
-    double xAnglePercentage = Math.sin(zAngle) * Math.sin(zAngle);
-    double zAnglePercentage = Math.cos(zAngle) * Math.cos(zAngle);
+    double yAngle = cameraXYrotate.ry.getAngle() * Math.PI / 180;
+    double xAnglePercentage = Math.sin(yAngle) * Math.sin(yAngle);
+    double zAnglePercentage = Math.cos(yAngle) * Math.cos(yAngle);
+    double maths = Math.sqrt(2)/2;
         //Keeps the sign of the sin/cos since it's needed for seeing whether to add/subtract from X/Z position
-    if (Math.sin(zAngle) < 0) xAnglePercentage = -xAnglePercentage;
-    if (Math.cos(zAngle) < 0) zAnglePercentage = -zAnglePercentage;
+    if (Math.sin(yAngle) < 0) xAnglePercentage = -xAnglePercentage;
+    if (Math.cos(yAngle) < 0) zAnglePercentage = -zAnglePercentage;
     
     
     if (goForward && !goBackward) 
@@ -357,33 +373,25 @@ public class LevelRender extends Application
       //Northwest
       if (goLeft && !goRight)
       {
-        double test = 2*Math.sqrt(2);
-        double moveX = moveBy*(xAnglePercentage + zAnglePercentage)/2;
-        double moveZ = moveBy * (zAnglePercentage - xAnglePercentage)/2;
-        System.out.println("X, Z percentage: (" + xAnglePercentage + ", " + zAnglePercentage + ")");
-        System.out.println("New X, Z: (" + moveX + ", " + moveZ + ")");
-        //System.out.println("NW movement: (" + moveX + ", " + moveY + ")");
-        //cameraXYtranslate.t.setX(cameraXYtranslate.t.getX() + (moveBy*xAnglePercentage + zAnglePercentage)/2);
-        //cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveBy * (zAnglePercentage - xAnglePercentage) / 2);
-        //North part
-        //cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*xAnglePercentage));
-        //cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*zAnglePercentage));
-        //West part
-        //cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*zAnglePercentage));
-        //cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() - moveBy*xAnglePercentage));
+        
+        cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*(xAnglePercentage + zAnglePercentage)*maths));
+        cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*(zAnglePercentage - xAnglePercentage)*maths));
         return;
       }
       //Northeast
       if (goRight && !goLeft)
       {
-        System.out.println("Noncardinal NE direction pressed");
+        cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*(xAnglePercentage - zAnglePercentage)*maths));
+        cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*(zAnglePercentage + xAnglePercentage)*maths));
         return;
       }
       //North
       else if ((!goRight && !goLeft) || (goLeft && goRight))
       {
+        System.out.println("(" + xAnglePercentage + ", " + zAnglePercentage + ")");
         cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*xAnglePercentage));
         cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*zAnglePercentage));
+        
         return;
       }
     }
@@ -392,13 +400,15 @@ public class LevelRender extends Application
       //Southwest
       if (goLeft && !goRight)
       {
-        System.out.println("Noncardinal SW direction pressed");
+        cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*(-xAnglePercentage + zAnglePercentage)*maths));
+        cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*(-zAnglePercentage - xAnglePercentage)*maths));
         return;
       }
       //Southeast
       if (goRight && !goLeft)
       {
-        System.out.println("Noncardinal SE direction pressed");
+        cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*(-xAnglePercentage - zAnglePercentage)*maths));
+        cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*(-zAnglePercentage + xAnglePercentage)*maths));
         return;
       }
       //South
@@ -426,6 +436,9 @@ public class LevelRender extends Application
 
     
   }
+  
+
+  
   
   public class MainGameLoop extends AnimationTimer
   {
@@ -456,6 +469,15 @@ public class LevelRender extends Application
   {
     root.getChildren().add(world);
     
+    Zombie z1 = new Zombie(true, 200.0, 350.0, 20);
+    Xform z1Xform = new Xform();
+    z1Xform.setTranslateX(z1.getXPosition());
+    z1Xform.setTranslateZ(z1.getYPosition());
+    z1Xform.setTranslateY(-50);
+    z1Xform.getChildren().add(z1.drawZombie());
+    world.getChildren().add(z1Xform);
+
+    
 
     buildCamera();
     buildAxes();
@@ -466,6 +488,7 @@ public class LevelRender extends Application
     Scene scene = new Scene(root, 1000, 1000, true);
     scene.setFill(Color.GREY);
     scene.setCamera(camera);
+    //scene.setCursor(Cursor.NONE);
     handleKeyboard(scene, world);
     handleMouse(scene, world);
     
