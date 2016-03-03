@@ -268,6 +268,7 @@ public class LevelRender extends Application
     //CASE FOR houseGEN
     //world.getChildren().add(houseGen.wallXform);
     
+    Xform gridXform = new Xform();
     for (float i = 0; i < NUM_TILES; i += 1)
     {
       Xform testXform = new Xform();
@@ -288,8 +289,11 @@ public class LevelRender extends Application
       testXform2.setTranslateY(-2*TILE_SIZE);
       testXform2.setTranslateX(i*TILE_SIZE);
       testXform2.setTranslateZ(NUM_TILES*TILE_SIZE/2);
-      world.getChildren().addAll(testXform, testXform2);
+      gridXform.getChildren().addAll(testXform, testXform2);
     }
+    gridXform.setTranslateX(-TILE_SIZE/2);
+    gridXform.setTranslateZ(-TILE_SIZE/2);
+    world.getChildren().add(gridXform);
     
     Xform testBoxXform = new Xform();
     
@@ -302,6 +306,7 @@ public class LevelRender extends Application
     
     Xform wallsXform = new Xform();
     boolean[][] floorPlan = makeFloorPlan();
+    for (int i = 4; i < 7; i++) floorPlan[22][i] = true;
     boolean[][] unvisitedHorizontal = new boolean[NUM_TILES][NUM_TILES];
     boolean[][] unvisitedVertical = new boolean[NUM_TILES][NUM_TILES];
     for (int i = 0; i < NUM_TILES; i++)
@@ -318,7 +323,7 @@ public class LevelRender extends Application
       {
         if (floorPlan[i][j] && unvisitedHorizontal[i][j])
         {
-          int horizontalX = i-1;
+          int horizontalX = i;
           //Creating Horizontal Walls
           for (int k = i; k < NUM_TILES; k++)
           {
@@ -326,14 +331,16 @@ public class LevelRender extends Application
             if (floorPlan[k][j]) horizontalX += 1;
             else k = NUM_TILES;
           }
-          if (horizontalX != i)
+          if (horizontalX > i+1)
           {
-            System.out.println("i, horizX: (" + i + ", " + horizontalX + ")");
+            System.out.println("i, horizX: (" + i + ", " + horizontalX + ") " + j);
             Box box = new Box((horizontalX-i)*TILE_SIZE, TILE_SIZE*4, TILE_SIZE);
-            //box.setTranslateY(-TILE_SIZE);
             box.setBlendMode(BlendMode.SRC_OVER);
             box.setCullFace(CullFace.BACK);
-            box.setTranslateX((horizontalX-i)*TILE_SIZE/2);
+            box.setTranslateX(i*TILE_SIZE/2);
+            box.setTranslateX(box.getTranslateX() + (horizontalX-i)*TILE_SIZE/2);
+            if ((horizontalX-i)/2 % 1 == 0) box.setTranslateX(box.getTranslateX() + TILE_SIZE/2);
+            if (i % 2 > 0) box.setTranslateX(box.getTranslateX() + TILE_SIZE/2);
             box.setTranslateZ(j*TILE_SIZE);
             box.setMaterial(testMaterial);
             wallsXform.getChildren().add(box);
@@ -351,13 +358,14 @@ public class LevelRender extends Application
           }
           if (verticalZ != j)
           {
-            System.out.println("i, verticleZ: (" + i + ", " + verticalZ + ")");
+            System.out.println("j, verticleZ: (" + j + ", " + verticalZ + ") " + i);
             Box box = new Box(TILE_SIZE, TILE_SIZE*4, TILE_SIZE*(verticalZ-j));
-            //box.setTranslateY(-TILE_SIZE);
             box.setBlendMode(BlendMode.SRC_OVER);
             box.setCullFace(CullFace.BACK);
             box.setTranslateX(i*TILE_SIZE);
-            box.setTranslateZ((verticalZ-j)*TILE_SIZE/2);
+            box.setTranslateZ((verticalZ+j) / 2 * TILE_SIZE);
+            if ((verticalZ-j)/2 % 1 == 0) box.setTranslateZ(box.getTranslateZ() + TILE_SIZE/2);
+            if (j % 2 > 0) box.setTranslateZ(box.getTranslateZ() + TILE_SIZE/2);
             box.setMaterial(testMaterial);
             wallsXform.getChildren().add(box);
           }
@@ -401,7 +409,6 @@ public class LevelRender extends Application
       //North
       else if ((!goRight && !goLeft) || (goLeft && goRight))
       {
-        System.out.println("(" + xAnglePercentage + ", " + zAnglePercentage + ")");
         cameraXYtranslate.t.setX((cameraXYtranslate.t.getX() + moveBy*xAnglePercentage));
         cameraXYtranslate.t.setZ((cameraXYtranslate.t.getZ() + moveBy*zAnglePercentage));
         
@@ -480,6 +487,7 @@ public class LevelRender extends Application
   @Override
   public void start(Stage primaryStage)
   {
+    primaryStage.setMaximized(true);
     root.getChildren().add(world);
     
     Zombie z1 = new Zombie(true, 200.0, 350.0, 20);
