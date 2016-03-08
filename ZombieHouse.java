@@ -21,6 +21,24 @@ import javafx.event.EventHandler;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 
+
+/**
+ * ZombieHouse Application
+ * ZombieHouse implements JavaFX 3D camera/geometry to create a simple "escape the house" game.
+ * Using AnimationTimer, Mouse/Keyboard handlers, the player tries to escape the house which is populated with zombies.
+ * This is a first-person game in which the camera is essentially the "eye" of the player.
+ * 
+ * Player movement is controlled by WASD in the normal fashion, with SHIFT increasing speed by 2.
+ * The game assumes that JavaFX's AnimationTimer attempts to update at 60 FPS as specified in its documentation.
+ * Zombie generation and movement are both dependent on the classes which are a part of this package.
+ * Mouse movement changes the viewing angle of the Scene/Room, although it does not handle edge/off-screen
+ * movement.
+ * The Y-Axis is the UP/DOWN viewing angle of the scene.
+ * The Z-AXIS is the FORWARD/BACKWARD viewing angle of the scene.
+ * The X-AXis is the LEFT/RIGHT viewing angle of the scene.
+ * @author Max Barnhart
+ * @author Ederin Igharoro
+ */
 public class ZombieHouse extends Application
 {
   //Game loop
@@ -90,6 +108,12 @@ public class ZombieHouse extends Application
   private static final double MOUSE_SPEED = 0.1;
   private static final double ROTATION_SPEED = 3.0;
   
+  /**
+   * Builds the camera for the scene. Sets up a series of Transforms for easy manipulation of the position
+   * of the Camera, which acts as the character in the game.
+   * Sets up a PointLight so that it follows around and points at wherever the camera is facing.
+   * A very-close, very-small rectangle is used to display the center of the scene.
+   */
   private void buildCamera()
   {
     root.getChildren().add(cameraXYtranslate);
@@ -129,14 +153,19 @@ public class ZombieHouse extends Application
     
   }
   
-
+  /**
+   * handleMouse deals with the changing view of the camera based on mouse inputs.
+   * UP/DOWN and LEFT/RIGHT alter the angle of viewing rather than any physical distance.
+   * @param scene Scene to which the EventHandlers are being attached.
+   * @param root The node which the scene is attached to.
+   */
   private void handleMouse(Scene scene, final Node root) {
     scene.setOnMouseMoved(new EventHandler<MouseEvent>()
     {
       @Override
       public void handle(MouseEvent me)
       {
-        //do stuff
+        //Calculates old X/Y angles and new ones.
         mouseOldX = mousePosX;
         mouseOldY = mousePosY;
         mousePosX = me.getSceneX();
@@ -148,6 +177,7 @@ public class ZombieHouse extends Application
         
         double newMouseXAngle = cameraXYrotate.rx.getAngle() + mouseDeltaY*MOUSE_SPEED*modifier*ROTATION_SPEED;
         cameraXYrotate.ry.setAngle(cameraXYrotate.ry.getAngle() - mouseDeltaX*MOUSE_SPEED*modifier*ROTATION_SPEED);
+        //Checks to make sure you can't flip the camera upside down by continually moving down.
         if (newMouseXAngle > 90) return;
         else if (newMouseXAngle < -90) return;
         else cameraXYrotate.rx.setAngle(newMouseXAngle);
@@ -167,8 +197,14 @@ public class ZombieHouse extends Application
       }
     });
     
-}
+  }
   
+  /**
+   * Sets global boolean values to TRUE/FALSE based on input. AnimationTimer itself handles
+   * the movement, but these EventHandlers dictates the necessity of the action.
+   * @param scene The scene to which the EventHandlers are being bound to.
+   * @param root The Node which the screen is attached to.
+   */
   private void handleKeyboard(Scene scene, final Node root)
   {
     scene.setOnKeyPressed(new EventHandler<KeyEvent>()
@@ -220,7 +256,10 @@ public class ZombieHouse extends Application
       } 
     });
   }
-  
+  /**
+   * Creates an empty floorPlan with nothing but walls surrounding it.
+   * @return a 2D boolean array in which TRUE indicates a wall exists at that cell.
+   */
   private boolean[][] makeFloorPlan()
   {
     boolean[][] floorPlan = new boolean[NUM_TILES][NUM_TILES];
@@ -243,6 +282,12 @@ public class ZombieHouse extends Application
     return floorPlan;
   }
   
+  /**
+   * generateRoom() takes the constants NUM_TILEs, TILE_SIZE, and creates
+   * a room based on the specifications of the floorPlan[][]. 
+   * Uses an algorithm which follows Vertical/Horizontal walls to their end, so that clean,
+   * visually-appealing walls are built.
+   */
   private void generateRoom()
   {
     //IMAGE COMMENTED OUT BECAUSE ITS NOT ON GITHUB YET WHILE I PLAY WITH IT
@@ -257,34 +302,29 @@ public class ZombieHouse extends Application
     redMaterial.setDiffuseColor(Color.DARKRED);
     redMaterial.setSpecularColor(Color.BLACK);
     
-    PhongMaterial whiteMaterial = new PhongMaterial();
-    whiteMaterial.setDiffuseColor(Color.CORNFLOWERBLUE);
-    whiteMaterial.setSpecularColor(Color.LIGHTBLUE);
-   
     //CASE FOR houseGEN
     //world.getChildren().add(houseGen.wallXform);
     
-    Xform testXform = new Xform();
+    //Creates an array of floor tiles for the house
+    Xform tileXform = new Xform();
     
     for (int i = 0; i < NUM_TILES; i++)
     {
       for (int j = 0; j < NUM_TILES; j++)
       {
-        Box testBox = new Box(49, 1, 49);
-        testBox.setMaterial(redMaterial);
-        testBox.setTranslateZ(i*TILE_SIZE);
-        testBox.setTranslateX(j*TILE_SIZE);
-        testBox.setTranslateY(-1*TILE_SIZE);
-        testXform.getChildren().add(testBox);
+        Box tileBox = new Box(TILE_SIZE-1, 1, TILE_SIZE-1);
+        tileBox.setMaterial(redMaterial);
+        tileBox.setTranslateZ(i*TILE_SIZE);
+        tileBox.setTranslateX(j*TILE_SIZE);
+        tileBox.setTranslateY(-1*TILE_SIZE);
+        tileXform.getChildren().add(tileBox);
       }
     }
-    world.getChildren().add(testXform);
+    world.getChildren().add(tileXform);
     
+    //Creates the walls for the floorPlan[][].
     Xform wallsXform = new Xform();
     floorPlan = makeFloorPlan();
-    for (int i = 4; i < 7; i++) floorPlan[22][i] = true;
-    floorPlan[45][45] = true;
-    floorPlan[45][46] = true;
     boolean[][] unvisitedHorizontal = new boolean[NUM_TILES][NUM_TILES];
     boolean[][] unvisitedVertical = new boolean[NUM_TILES][NUM_TILES];
     for (int i = 0; i < NUM_TILES; i++)
@@ -352,7 +392,13 @@ public class ZombieHouse extends Application
     world.getChildren().add(wallsXform);
   }
   
-  
+  /**
+   * updateCharacter() is called on each animation update. Checks to see how far the character has to go
+   * based on the time elapsed since the last update so that even with slow games the player moves at a constant rate.
+   * Calls a second method moveCharacter(float X, float Y) because collision detection was originally going in there, with
+   * this method being used to calculate the change in X/Y position based on what keys were being pressed down.
+   * @param timeElapsed The time, in nanoseconds, since the last animation update.
+   */
   public void updateCharacter(float timeElapsed)
   {
     //Do stuff
@@ -452,36 +498,26 @@ public class ZombieHouse extends Application
     
   }
   
+  /**
+   * Moves the character based on the given parameters.
+   * @param moveByX Distance to be moved in the X direction. Cannot exceed the speed constant.
+   * @param moveByZ Distance to be moved in the Z direction. Cannot exceed teh speed constant.
+   */
   public void moveCharacter(double moveByX, double moveByZ)
   {
-    int oldXCell = (int) Math.floor(cameraXYtranslate.t.getX()/TILE_SIZE);
-    int oldZCell = (int) Math.floor(cameraXYtranslate.t.getZ()/TILE_SIZE);
-    double moveDifX = (cameraXYtranslate.t.getX() % TILE_SIZE) + moveByX;
-    /*
-    if (moveDifX-15 < 0)
-    {
-      if (floorPlan[oldXCell-1][oldZCell] && oldXCell > 0)
-      {
-        cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveByZ);
-      }
-    }
-    else if (moveDifX + 15 > TILE_SIZE)
-    {
-      if (floorPlan[oldXCell+1][oldZCell] && oldXCell < 49)
-      {
-        cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveByZ);
-      }
-    }
-    else cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveByZ);
-    */
     cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveByZ);
     cameraXYtranslate.t.setX(cameraXYtranslate.t.getX() + moveByX);
-    //cameraXYtranslate.t.setZ(newZ);
   }
   
 
   
-  
+  /**
+   * MainGameLoop is the primary handler of decisions/updates to the game state.
+   * Initially, it waits for the Start Scene to finish its startup before updating the positions of the 
+   * Zombies and player. After that, it switches to the primary scene and updating begins.
+   * @author Max Barnhart
+   *
+   */
   public class MainGameLoop extends AnimationTimer
   {
     @Override
@@ -528,8 +564,6 @@ public class ZombieHouse extends Application
       }
       else
       {
-      //Check for running/stamina depletion
-        
         
         //Update character position
         updateCharacter((now - lastUpdate) / 1e9f);
@@ -562,6 +596,10 @@ public class ZombieHouse extends Application
   
   
   @Override
+  /**
+   * Sets up the Game loop, the two different scenes used, animation loop, and keyboard/mouse handlers.
+   * @param primaryStage the Stage for the application
+   */
   public void start(Stage primaryStage)
   {
     primaryStage.setMaximized(true);
@@ -592,6 +630,10 @@ public class ZombieHouse extends Application
     gameLoop.start();
   }
   
+  /**
+   * Launches the application.
+   * @param args Array of String arguments given to the program by the console based on user input.
+   */
   public static void main(String[] args)
   {
     launch(args);
