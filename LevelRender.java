@@ -21,7 +21,7 @@ import javafx.event.EventHandler;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 
-public class LevelRender extends Application
+public class ZombieHouse extends Application
 {
   //Game loop
   MainGameLoop gameLoop;
@@ -574,7 +574,7 @@ public class LevelRender extends Application
     gameLoop = new MainGameLoop();
     isPaused = true;
     
-    primaryStage.setTitle("JavaFX Camera and Dungeon Test");
+    primaryStage.setTitle("Ederin and Max's Zombie House");
     primaryStage.setScene(startScene);
     primaryStage.show();
     
