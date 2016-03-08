@@ -16,7 +16,6 @@ import javafx.scene.shape.Box;
  * the 3D effect.
  * 
  * @author Ederin Igharoro
- * @author Max Barnhart
  */
 
 public class HouseGenerator extends Group

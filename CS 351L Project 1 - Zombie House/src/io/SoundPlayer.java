@@ -15,7 +15,6 @@ import java.lang.IllegalArgumentException;
  * If SoundPlayer is given a .wav file that is not in the simple linear PCM format, 
  * then there will not be an error thrown, but no sound will play.
  * @author Ederin Igharoro
- * @author Max Barnhart
  */
 public class SoundPlayer  
 { private AudioClip soundEffect; // Sound player

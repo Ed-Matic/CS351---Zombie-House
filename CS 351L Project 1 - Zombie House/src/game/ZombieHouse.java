@@ -12,10 +12,12 @@ import javafx.scene.PerspectiveCamera;
 import javafx.scene.PointLight;
 import javafx.scene.Scene;
 import javafx.scene.effect.BlendMode;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Box;
 import javafx.scene.shape.CullFace;
+import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import model.HouseGenerator;
@@ -319,8 +321,11 @@ public class ZombieHouse extends Application
   private void generateRoom()
   {
     // IMAGE COMMENTED OUT BECAUSE ITS NOT ON GITHUB YET WHILE I PLAY WITH IT
-    // Image textureImage = new
-    // Image(getClass().getResourceAsStream("brick.jpg"));
+    
+    Image textureImage = new Image(getClass().getResourceAsStream("GameWall.jpg"));
+
+    PhongMaterial material = new PhongMaterial();
+    material.setDiffuseMap(textureImage);
 
     PhongMaterial testMaterial = new PhongMaterial();
     // testMaterial.setDiffuseMap(textureImage);
@@ -336,6 +341,8 @@ public class ZombieHouse extends Application
 
     // Creates an array of floor tiles for the house
     Xform tileXform = new Xform();
+    Xform testXform3 = new Xform();
+    
 
     for (int i = 0; i < NUM_TILES; i++)
     {
@@ -347,9 +354,21 @@ public class ZombieHouse extends Application
         tileBox.setTranslateX(j * TILE_SIZE);
         tileBox.setTranslateY(-1 * TILE_SIZE);
         tileXform.getChildren().add(tileBox);
+        
+        Box roof = new Box(TILE_SIZE-1, 1, TILE_SIZE);
+        roof.setMaterial(material);
+        roof.setRotationAxis(Rotate.Y_AXIS);
+        roof.setTranslateY(TILE_SIZE);
+        roof.setRotate(90);
+        
+        tileXform.getChildren().add(roof);
+
       }
     }
-    world.getChildren().add(tileXform);
+    
+    
+    
+    world.getChildren().addAll(tileXform);
 
     // Creates the walls for the floorPlan[][].
     Xform wallsXform = new Xform();
@@ -392,7 +411,7 @@ public class ZombieHouse extends Application
             if (i % 2 > 0)
               box.setTranslateX(box.getTranslateX() + TILE_SIZE / 2);
             box.setTranslateZ(j * TILE_SIZE);
-            box.setMaterial(testMaterial);
+            box.setMaterial(material);
             wallsXform.getChildren().add(box);
           }
         }
@@ -418,7 +437,7 @@ public class ZombieHouse extends Application
               box.setTranslateZ(box.getTranslateZ() + TILE_SIZE / 2);
             if (j % 2 > 0)
               box.setTranslateZ(box.getTranslateZ() + TILE_SIZE / 2);
-            box.setMaterial(testMaterial);
+            box.setMaterial(material);
             wallsXform.getChildren().add(box);
           }
         }

@@ -1,5 +1,11 @@
 package io;
 
+/**
+* Sounds implements the sound Player class. Uses
+* WAV formated audio files for music and players'
+* footsteps
+* @author Ederin Igharoro
+*/
 public class Sounds
 {
   public SoundPlayer backGroundMusic, playerWalk;
