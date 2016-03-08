@@ -40,7 +40,10 @@ public class LevelRender extends Application
   boolean goLeft = false;
   boolean goRight = false;
   boolean goRun = false;
-  double moveBy = 2;
+  double moveBy = 5;
+  double distancePerSecond = 2*TILE_SIZE;
+  double stamina = 5.0;
+  double staminaRegen = 0.2;
   double charRadius = 30;
   
   //FPS fixing constants
@@ -56,9 +59,6 @@ public class LevelRender extends Application
   final PointLight light = new PointLight();
   
   //Camera initial values
-  private static final double CAMERA_INITIAL_DISTANCE = 0;
-  private static final double CAMERA_INITIAL_X_ANGLE = 0;//70;
-  private static final double CAMERA_INITIAL_Y_ANGLE = 0;//320;
   private static final double CAMERA_NEAR_CLIP = 0.1;
   private static final double CAMERA_FAR_CLIP = 10000.0;
   
@@ -82,9 +82,6 @@ public class LevelRender extends Application
 
     camera.setNearClip(CAMERA_NEAR_CLIP);
     camera.setFarClip(CAMERA_FAR_CLIP);
-    camera.setTranslateZ(CAMERA_INITIAL_DISTANCE);
-    cameraXYrotate.ry.setAngle(CAMERA_INITIAL_Y_ANGLE);
-    cameraXYrotate.rx.setAngle(CAMERA_INITIAL_X_ANGLE);
     
     cameraXYtranslate.t.setX(NUM_TILES*TILE_SIZE/2);
     cameraXYtranslate.t.setZ(NUM_TILES*TILE_SIZE/2);
@@ -140,6 +137,7 @@ public class LevelRender extends Application
         if (newMouseXAngle > 90) return;
         else if (newMouseXAngle < -90) return;
         else cameraXYrotate.rx.setAngle(newMouseXAngle);
+        
       }
     });
     /***********************
@@ -199,6 +197,8 @@ public class LevelRender extends Application
         case D:
           goRight = true;
           break;
+        case SHIFT:
+          goRun = true;
         }
       }  
     });
@@ -221,6 +221,8 @@ public class LevelRender extends Application
         case D:
           goRight = false;
           break;
+        case SHIFT:
+          goRun = false;
         }
       } 
     });
@@ -251,7 +253,7 @@ public class LevelRender extends Application
   private void generateRoom()
   {
     //IMAGE COMMENTED OUT BECAUSE ITS NOT ON GITHUB YET WHILE I PLAY WITH IT
-    Image textureImage = new Image(getClass().getResourceAsStream("brick.jpg"));
+    //Image textureImage = new Image(getClass().getResourceAsStream("brick.jpg"));
     
     PhongMaterial testMaterial = new PhongMaterial();
     //testMaterial.setDiffuseMap(textureImage);
@@ -269,32 +271,21 @@ public class LevelRender extends Application
     //CASE FOR houseGEN
     //world.getChildren().add(houseGen.wallXform);
     
-    Xform gridXform = new Xform();
-    for (float i = 0; i < NUM_TILES; i += 1)
+    Xform testXform = new Xform();
+    
+    for (int i = 0; i < NUM_TILES; i++)
     {
-      Xform testXform = new Xform();
-      Xform testXform2 = new Xform();
-      Box testBox = new Box(NUM_TILES*TILE_SIZE, 1, 1);
-      Box testBox2 = new Box(1, NUM_TILES*TILE_SIZE, 1);
-      testBox.setMaterial(redMaterial);
-      testBox.setRotationAxis(Rotate.X_AXIS);
-      testBox.setRotate(90);
-      testXform.getChildren().add(testBox);
-      testXform.setTranslateY(-2*TILE_SIZE);
-      testXform.setTranslateZ(i*TILE_SIZE);
-      testXform.setTranslateX(NUM_TILES*TILE_SIZE/2);
-      testBox2.setMaterial(redMaterial);
-      testBox2.setRotationAxis(Rotate.X_AXIS);
-      testBox2.setRotate(90);
-      testXform2.getChildren().add(testBox2);
-      testXform2.setTranslateY(-2*TILE_SIZE);
-      testXform2.setTranslateX(i*TILE_SIZE);
-      testXform2.setTranslateZ(NUM_TILES*TILE_SIZE/2);
-      gridXform.getChildren().addAll(testXform, testXform2);
+      for (int j = 0; j < NUM_TILES; j++)
+      {
+        Box testBox = new Box(49, 1, 49);
+        testBox.setMaterial(redMaterial);
+        testBox.setTranslateZ(i*TILE_SIZE);
+        testBox.setTranslateX(j*TILE_SIZE);
+        testBox.setTranslateY(-1*TILE_SIZE);
+        testXform.getChildren().add(testBox);
+      }
     }
-    gridXform.setTranslateX(-TILE_SIZE/2);
-    gridXform.setTranslateZ(-TILE_SIZE/2);
-    world.getChildren().add(gridXform);
+    world.getChildren().add(testXform);
     
     Xform testBoxXform = new Xform();
     
@@ -303,7 +294,7 @@ public class LevelRender extends Application
     testBox.setRotationAxis(Rotate.X_AXIS);
     testBox.setRotate(90);
     testBoxXform.getChildren().add(testBox);
-    testBoxXform.setTranslateY(-100);
+    testBoxXform.setTranslateY(-1*TILE_SIZE);
     cameraXYtranslate.getChildren().add(testBoxXform);
     
     Xform wallsXform = new Xform();
@@ -380,9 +371,21 @@ public class LevelRender extends Application
     world.getChildren().add(wallsXform);
   }
   
-  public void updateCharacter()
+  public void updateCharacter(float timeElapsed)
   {
     //Do stuff
+    if (goRun && (stamina > timeElapsed) && (goLeft || goRight || goForward || goBackward))
+    {
+      moveBy = 2*distancePerSecond*(timeElapsed);
+      stamina -= timeElapsed;
+    }
+    else {
+      moveBy = distancePerSecond*(timeElapsed);
+      if (stamina < 5.0) stamina += timeElapsed*staminaRegen;
+    }
+    System.out.println(stamina);
+    //moveBy = 5;
+    
     double yAngle = cameraXYrotate.ry.getAngle() * Math.PI / 180;
     double xAnglePercentage = Math.sin(yAngle) * Math.sin(yAngle);
     double zAnglePercentage = Math.cos(yAngle) * Math.cos(yAngle);
@@ -472,43 +475,29 @@ public class LevelRender extends Application
   public void moveCharacter(double moveByX, double moveByZ)
   {
     //do stuff
-    double newX = moveByX + cameraXYtranslate.t.getX();
-    double newZ = moveByZ + cameraXYtranslate.t.getZ();
     //charRadius = 30
-    int oldZCell = (int) Math.floor(cameraXYtranslate.t.getX()/TILE_SIZE);
-    int oldXCell = (int) Math.floor(cameraXYtranslate.t.getZ()/TILE_SIZE);
-    int zCell = (int) Math.floor(newZ/TILE_SIZE);
-    int xCell = (int) Math.floor(newX/TILE_SIZE);
-    System.out.println("(" + xCell + ", " + zCell + ") : " + floorPlan[xCell][zCell]);
-    //if (zCell - oldZCell > 0)
-    //{
-      //if (xCell - oldXCell > 0)
-      //{
-        if (!floorPlan[xCell][zCell])
-        {
-          //Regular Movement
-          cameraXYtranslate.t.setX(newX);
-          cameraXYtranslate.t.setZ(newZ);
-        }
-        else if (floorPlan[oldXCell][zCell])
-        {
-          //Z Movement only
-          cameraXYtranslate.t.setZ(newZ);
-        }
-        else if (floorPlan[xCell][oldZCell])
-        {
-          //X Movement only
-          cameraXYtranslate.t.setX(newX);
-        }
-      //}
-    //}
-    
-    
-    
-    
-    
-    
-    //cameraXYtranslate.t.setX(newX);
+    int oldXCell = (int) Math.floor(cameraXYtranslate.t.getX()/TILE_SIZE);
+    int oldZCell = (int) Math.floor(cameraXYtranslate.t.getZ()/TILE_SIZE);
+    double moveDifX = (cameraXYtranslate.t.getX() % TILE_SIZE) + moveByX;
+    /*
+    if (moveDifX-15 < 0)
+    {
+      if (floorPlan[oldXCell-1][oldZCell] && oldXCell > 0)
+      {
+        cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveByZ);
+      }
+    }
+    else if (moveDifX + 15 > TILE_SIZE)
+    {
+      if (floorPlan[oldXCell+1][oldZCell] && oldXCell < 49)
+      {
+        cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveByZ);
+      }
+    }
+    else cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveByZ);
+    */
+    cameraXYtranslate.t.setZ(cameraXYtranslate.t.getZ() + moveByZ);
+    cameraXYtranslate.t.setX(cameraXYtranslate.t.getX() + moveByX);
     //cameraXYtranslate.t.setZ(newZ);
   }
   
@@ -517,23 +506,20 @@ public class LevelRender extends Application
   
   public class MainGameLoop extends AnimationTimer
   {
-    long updateWindow = 1000/fps;
     @Override
     public void handle(long now)
     {
-      long difference = now - lastUpdate;
-      lastUpdate = now;
-      if (difference >= updateWindow)
-      {
         //Check for running/stamina depletion
         
+        
         //Update character position
-        updateCharacter();
+        updateCharacter((now - lastUpdate) / 1e9f);
         
         //Update zombie positions
         
         //Check for collisions
-      }
+        
+        lastUpdate = now;
     }
   }
   
