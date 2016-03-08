@@ -1,6 +1,9 @@
 package game;
 
 
+import java.util.ArrayList;
+import java.util.Random;
+
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Group;
@@ -9,12 +12,10 @@ import javafx.scene.PerspectiveCamera;
 import javafx.scene.PointLight;
 import javafx.scene.Scene;
 import javafx.scene.effect.BlendMode;
-import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Box;
 import javafx.scene.shape.CullFace;
-import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
 import javafx.event.EventHandler;
 import javafx.scene.input.KeyEvent;
@@ -24,31 +25,48 @@ public class LevelRender extends Application
 {
   //Game loop
   MainGameLoop gameLoop;
+  boolean isPaused;
   HouseGenerator houseGen = new HouseGenerator();
   boolean[][] floorPlan;
   
   final Group root = new Group();
   Xform world = new Xform();
+  Stage stage;
+  Scene scene;
+  StartScreen startScene = new StartScreen(new Group());
   
   //Size of our tile
   final double TILE_SIZE = 50;
   final int NUM_TILES = 50;
   
-  //Character movement values
+  //Zombie Values
+  ArrayList<Zombie> zombieList = new ArrayList<Zombie>();
+  double zombieSpeed;
+  double zombieSpawn;
+  double zombieDecisionRate;
+  double zombieSmellDistance;
+  //Random Number generator for Zombie Spawn
+  Random rand = new Random();
+  
+  //Character movement/hearing values
   boolean goForward = false;
   boolean goBackward = false;
   boolean goLeft = false;
   boolean goRight = false;
   boolean goRun = false;
+  
   double moveBy = 5;
-  double distancePerSecond = 2*TILE_SIZE;
+  double speed = 2;
+  double distancePerSecond = speed*TILE_SIZE;
   double stamina = 5.0;
   double staminaRegen = 0.2;
+  double hearing = 20;
   double charRadius = 30;
   
+  
   //FPS fixing constants
-  private long fps = 60;
   private long lastUpdate = 0;
+  private long lastZombieUpdate = 0;
   
   //Camera transforms
   final Xform cameraXYrotate = new Xform();
@@ -86,7 +104,7 @@ public class LevelRender extends Application
     cameraXYtranslate.t.setX(NUM_TILES*TILE_SIZE/2);
     cameraXYtranslate.t.setZ(NUM_TILES*TILE_SIZE/2);
 
-    //Adds a PointLight at the 
+    //Adds a PointLight at the point of the camera so it rotates with the field of view.
     PointLight light = new PointLight();
     light.setColor(Color.WHITE);
     lightXform.getChildren().add(light);
@@ -103,14 +121,10 @@ public class LevelRender extends Application
     Box test2 = new Box(.001, .05, .001);
     test.setMaterial(blackMaterial);
     test2.setMaterial(blackMaterial);
-    Xform testXform = new Xform();
-    Xform testXform2 = new Xform();
     Xform crosshairXform = new Xform();
     
-    crosshairXform.getChildren().addAll(testXform, testXform2);
+    crosshairXform.getChildren().addAll(test, test2);
     crosshairXform.setTranslateZ(5);
-    testXform.getChildren().add(test);
-    testXform2.getChildren().add(test2);
     cameraXYrotate.getChildren().add(crosshairXform);
     
   }
@@ -138,27 +152,6 @@ public class LevelRender extends Application
         else if (newMouseXAngle < -90) return;
         else cameraXYrotate.rx.setAngle(newMouseXAngle);
         
-      }
-    });
-    /***********************
-     * GOING TO BE USED WHEN I IMPLEMENT ANIMATION TIMER...
-     */
-    scene.setOnMouseExited(new EventHandler<MouseEvent>() 
-    {
-      
-      
-      @Override
-      public void handle(MouseEvent me)
-      {
-        mouseOldX = mousePosX;
-        mouseOldY = mousePosY;
-        System.out.println(me.getSceneX());
-        if (me.getSceneX() <= 0)
-        {
-          
-        }
-        
-        //do stuff
       }
     });
     //This might be superfluous once we figure out mouse control better.
@@ -287,16 +280,6 @@ public class LevelRender extends Application
     }
     world.getChildren().add(testXform);
     
-    Xform testBoxXform = new Xform();
-    
-    Box testBox = new Box(30, 30, 1);
-    testBox.setMaterial(redMaterial);
-    testBox.setRotationAxis(Rotate.X_AXIS);
-    testBox.setRotate(90);
-    testBoxXform.getChildren().add(testBox);
-    testBoxXform.setTranslateY(-1*TILE_SIZE);
-    cameraXYtranslate.getChildren().add(testBoxXform);
-    
     Xform wallsXform = new Xform();
     floorPlan = makeFloorPlan();
     for (int i = 4; i < 7; i++) floorPlan[22][i] = true;
@@ -316,10 +299,10 @@ public class LevelRender extends Application
     {
       for (int j = 0; j < NUM_TILES; j++)
       {
+        //Creating Horizontal Walls
         if (floorPlan[i][j] && unvisitedHorizontal[i][j])
         {
           int horizontalX = i;
-          //Creating Horizontal Walls
           for (int k = i; k < NUM_TILES; k++)
           {
             unvisitedHorizontal[k][j] = false;
@@ -328,7 +311,6 @@ public class LevelRender extends Application
           }
           if (horizontalX > i+1)
           {
-            System.out.println("i, horizX: (" + i + ", " + horizontalX + ") " + j);
             Box box = new Box((horizontalX-i+1)*TILE_SIZE, TILE_SIZE*4, TILE_SIZE);
             box.setBlendMode(BlendMode.SRC_OVER);
             box.setCullFace(CullFace.BACK);
@@ -341,10 +323,10 @@ public class LevelRender extends Application
             wallsXform.getChildren().add(box);
           }
         }
+        //Creating Vertical Walls
         if (floorPlan[i][j] && unvisitedVertical[i][j])
         {
           int verticalZ = j-1;
-          //Creating Vertical Walls
           for (int k = j; k < NUM_TILES; k++)
           {
             unvisitedVertical[i][k] = false;
@@ -353,7 +335,6 @@ public class LevelRender extends Application
           }
           if (verticalZ != j)
           {
-            System.out.println("j, verticleZ: (" + j + ", " + verticalZ + ") " + i);
             Box box = new Box(TILE_SIZE, TILE_SIZE*4, TILE_SIZE*(verticalZ-j+1));
             box.setBlendMode(BlendMode.SRC_OVER);
             box.setCullFace(CullFace.BACK);
@@ -371,6 +352,7 @@ public class LevelRender extends Application
     world.getChildren().add(wallsXform);
   }
   
+  
   public void updateCharacter(float timeElapsed)
   {
     //Do stuff
@@ -383,14 +365,12 @@ public class LevelRender extends Application
       moveBy = distancePerSecond*(timeElapsed);
       if (stamina < 5.0) stamina += timeElapsed*staminaRegen;
     }
-    System.out.println(stamina);
     //moveBy = 5;
     
     double yAngle = cameraXYrotate.ry.getAngle() * Math.PI / 180;
     double xAnglePercentage = Math.sin(yAngle) * Math.sin(yAngle);
     double zAnglePercentage = Math.cos(yAngle) * Math.cos(yAngle);
-    double maths = Math.sqrt(2)/2;
-        //Keeps the sign of the sin/cos since it's needed for seeing whether to add/subtract from X/Z position
+    //Keeps the sign of the sin/cos since it's needed for seeing whether to add/subtract from X/Z position
     if (Math.sin(yAngle) < 0) xAnglePercentage = -xAnglePercentage;
     if (Math.cos(yAngle) < 0) zAnglePercentage = -zAnglePercentage;
     
@@ -403,16 +383,16 @@ public class LevelRender extends Application
       //Northwest
       if (goLeft && !goRight)
       {
-        moveByX = moveBy*(xAnglePercentage + zAnglePercentage)*maths;
-        moveByZ = moveBy*(zAnglePercentage - xAnglePercentage)*maths;
+        moveByX = moveBy*(xAnglePercentage + zAnglePercentage);
+        moveByZ = moveBy*(zAnglePercentage - xAnglePercentage);
         moveCharacter(moveByX, moveByZ);
         return;
       }
       //Northeast
       if (goRight && !goLeft)
       {
-        moveByX = moveBy*(xAnglePercentage - zAnglePercentage)*maths;
-        moveByZ = moveBy*(zAnglePercentage + xAnglePercentage)*maths;
+        moveByX = moveBy*(xAnglePercentage - zAnglePercentage);
+        moveByZ = moveBy*(zAnglePercentage + xAnglePercentage);
         moveCharacter(moveByX, moveByZ);
         return;
       }
@@ -430,16 +410,16 @@ public class LevelRender extends Application
       //Southwest
       if (goLeft && !goRight)
       {
-        moveByX = moveBy*(-xAnglePercentage + zAnglePercentage)*maths;
-        moveByZ =  moveBy*(-zAnglePercentage - xAnglePercentage)*maths;
+        moveByX = moveBy*(-xAnglePercentage + zAnglePercentage);
+        moveByZ =  moveBy*(-zAnglePercentage - xAnglePercentage);
         moveCharacter(moveByX, moveByZ);
         return;
       }
       //Southeast
       if (goRight && !goLeft)
       {
-        moveByX = moveBy*(-xAnglePercentage - zAnglePercentage)*maths;
-        moveByZ = moveBy*(-zAnglePercentage + xAnglePercentage)*maths;
+        moveByX = moveBy*(-xAnglePercentage - zAnglePercentage);
+        moveByZ = moveBy*(-zAnglePercentage + xAnglePercentage);
         moveCharacter(moveByX, moveByZ);
         return;
       }
@@ -474,8 +454,6 @@ public class LevelRender extends Application
   
   public void moveCharacter(double moveByX, double moveByZ)
   {
-    //do stuff
-    //charRadius = 30
     int oldXCell = (int) Math.floor(cameraXYtranslate.t.getX()/TILE_SIZE);
     int oldZCell = (int) Math.floor(cameraXYtranslate.t.getZ()/TILE_SIZE);
     double moveDifX = (cameraXYtranslate.t.getX() % TILE_SIZE) + moveByX;
@@ -509,15 +487,73 @@ public class LevelRender extends Application
     @Override
     public void handle(long now)
     {
-        //Check for running/stamina depletion
+      if (isPaused)
+      {
+        if (startScene.getGameState())
+        {
+          //Gets the initial values
+          zombieSpeed = startScene.getZombieSpeed();
+          zombieSpawn = startScene.getZombieSpawn();
+          zombieDecisionRate = startScene.getZombieDecision();
+          zombieSmellDistance = startScene.getZombieSmell();
+          //PlaceHolder for generating zombies...
+          for (int i = 0; i < NUM_TILES; i++)
+          {
+            for (int j = 0; j < NUM_TILES; j++)
+            {
+              //Need an additional check to make sure zombies aren't spawning within a certain
+              //distance of the player
+              if (!floorPlan[i][j] && rand.nextFloat() < zombieSpawn)
+              {
+                Zombie z1 = new Zombie(true, i*TILE_SIZE, j*TILE_SIZE, 20, zombieSpeed, zombieSmellDistance);
+                Xform z1Xform = z1.getXform();
+                world.getChildren().add(z1Xform);
+                zombieList.add(z1);
+              }
+              {
+                
+              }
+            }
+          }
+          
+          speed = startScene.getPlayerSpeed();
+          distancePerSecond = speed*TILE_SIZE;
+          hearing = startScene.getPlayerHearing();
+          stamina = startScene.getPlayerStamina();
+          staminaRegen = startScene.getPlayerRegen();
+          
+          stage.setScene(scene);
+          isPaused = false;
+        }
+      }
+      else
+      {
+      //Check for running/stamina depletion
         
         
         //Update character position
         updateCharacter((now - lastUpdate) / 1e9f);
         
         //Update zombie positions
+        if ((now - lastZombieUpdate) /1e9f >= zombieDecisionRate)
+        {
+          for (Zombie zombie: zombieList)
+          {
+            zombie.changeDirection();
+          }
+          lastZombieUpdate = now;
+        }
+        for (Zombie zombie: zombieList)
+        {
+          zombie.move();
+        }
         
         //Check for collisions
+        for (Zombie z: zombieList)
+        {
+          //collision detection
+        }
+      }
         
         lastUpdate = now;
     }
@@ -530,32 +566,28 @@ public class LevelRender extends Application
   {
     primaryStage.setMaximized(true);
     root.getChildren().add(world);
-    
-    Zombie z1 = new Zombie(true, 200.0, 350.0, 20);
-    Xform z1Xform = new Xform();
-    z1Xform.setTranslateX(z1.getXPosition());
-    z1Xform.setTranslateZ(z1.getYPosition());
-    z1Xform.setTranslateY(-50);
-    z1Xform.getChildren().add(z1.drawZombie());
-    world.getChildren().add(z1Xform);
 
     
 
     buildCamera();
     generateRoom();
     gameLoop = new MainGameLoop();
+    isPaused = true;
     
+    primaryStage.setTitle("JavaFX Camera and Dungeon Test");
+    primaryStage.setScene(startScene);
+    primaryStage.show();
     
-    Scene scene = new Scene(root, 1000, 1000, true);
+    stage = primaryStage;
+    scene = new Scene(root, startScene.getWidth(), startScene.getHeight(), true);
     scene.setFill(Color.GREY);
     scene.setCamera(camera);
     //scene.setCursor(Cursor.NONE);
     handleKeyboard(scene, world);
     handleMouse(scene, world);
     
-    primaryStage.setTitle("JavaFX Camera and Dungeon Test");
-    primaryStage.setScene(scene);
-    primaryStage.show();
+    
+    //primaryStage.setScene(scene);
     
     gameLoop.start();
   }
