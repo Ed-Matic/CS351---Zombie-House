@@ -3,9 +3,11 @@ package game;
 import java.util.Random;
 
 import javafx.scene.Node;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Cylinder;
+import javafx.scene.transform.Rotate;
 
 /**
  * Zombie Class
@@ -99,12 +101,16 @@ public class Zombie extends MovingBody
    */
   public Node drawZombie()
   {
-    PhongMaterial material = new PhongMaterial();
-    material.setDiffuseColor(Color.PALEGREEN);
-    material.setSpecularColor(Color.DARKOLIVEGREEN);
+    Image textureImage = new Image(getClass().getResourceAsStream("Zombie Face.png"));
+
+    PhongMaterial zMaterial = new PhongMaterial();
+    zMaterial.setDiffuseMap(textureImage);
     
-    Cylinder zombieCylinder = new Cylinder(getRadius(), 150);
-    zombieCylinder.setMaterial(material);
+    Cylinder zombieCylinder = new Cylinder(getRadius(), 100);
+    zombieCylinder.setMaterial(zMaterial);
+    zombieCylinder.setRotationAxis(Rotate.X_AXIS);
+    zombieCylinder.setRotate(180);
+    zombieCylinder.setTranslateY(40);
     return zombieCylinder;
   }
 

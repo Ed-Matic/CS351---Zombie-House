@@ -92,7 +92,7 @@ public class ZombieHouse extends Application
   final Xform cameraXYrotate = new Xform();
   final Xform cameraXYtranslate = new Xform();
   final Xform cameraZrotate = new Xform();
-  final PerspectiveCamera camera = new PerspectiveCamera(true);
+  public final PerspectiveCamera camera = new PerspectiveCamera(true);
   final Xform lightXform = new Xform();
   final PointLight light = new PointLight();
 

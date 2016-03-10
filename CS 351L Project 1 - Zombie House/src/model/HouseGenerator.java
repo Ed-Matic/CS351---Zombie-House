@@ -37,20 +37,15 @@ public class HouseGenerator extends Group
   public Box floor ;
   public Box ceeling;
   public float wallLength = 3.0f;
-  private Point3D initialPos;
   public Xform wallXform = new Xform();
   public Xform wallYform = new Xform();
   public Xform floorXform = new Xform();
   public Xform ceelingXform = new Xform();
   public Xform houseXform = new Xform();
   private Cell cells;
-  private int currentCell = 0;
   private int totalCells;
   private int visitedCells = 0;
   private boolean startedBuilding = false;
-  private int currentNeighbor = 0;
-  private List<Integer> lastCells;
-  private int backingUp = 0;
   private int wallToBreak = 0;
   
   public class Cell
@@ -84,14 +79,10 @@ public class HouseGenerator extends Group
     PhongMaterial material = new PhongMaterial();
     material.setDiffuseMap(textureImage);
     
-    initialPos = new Point3D((-NUM_TILES / 2) + wallLength / 2, 20.3f,
-        (-NUM_TILES / 2) + wallLength / 2);
-    
     double initialPosX = (-NUM_TILES / 2) + wallLength / 2;
     double initialPosY = 20.3f;
     double initialPosZ = (-NUM_TILES / 2) + wallLength / 2;
 
-    Point3D myPos = initialPos;
 
     for (int i = 0; i < NUM_TILES; i++)
     {
@@ -114,9 +105,6 @@ public class HouseGenerator extends Group
     {
       for (int j = 0; j < NUM_TILES; j++)
       {
-        myPos = new Point3D(
-            initialPos.getX() + (j * wallLength) - wallLength / 2, 20.3f,
-            initialPos.getZ() + (i * wallLength) - wallLength / 2);
 
         wall[i][j].setTranslateX((initialPosX + (j * wallLength) - wallLength / 2) * TILE_SIZE);
         wall[i][j].setTranslateY(initialPosY);

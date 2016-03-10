@@ -1,19 +1,20 @@
 package controller;
 
-import game.LevelRender;
+import game.Xform;
+import game.ZombieHouse;
 import model.HouseGenerator;
 import javafx.scene.Group;
 
 public class CollisionDetection extends Group
 {
-  LevelRender levelCam;
+  ZombieHouse levelCam;
   
-  public CollisionDetection()
+  public CollisionDetection(Xform wallXform)
   {
     
   }
   
-  public boolean isCollision()
+  public boolean isCollision(Xform wallXfrom)
   {
     try
     {
